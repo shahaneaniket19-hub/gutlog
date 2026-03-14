@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GutLog — Digestive Health Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f5f2ed;
+    --surface: #ffffff;
+    --surface2: #faf8f5;
+    --border: #e8e2d9;
+    --border2: #d4cdc3;
+    --text: #1a1714;
+    --text2: #6b6460;
+    --text3: #9c9490;
+    --accent: #c25c3a;
+    --accent2: #e8795a;
+    --accent-bg: #fdf0ec;
+    --green: #3a7d5c;
+    --green-bg: #edf6f1;
+    --amber: #b8760a;
+    --amber-bg: #fdf3e3;
+    --red: #c23a3a;
+    --red-bg: #fdeaea;
+    --blue: #2d6fa3;
+    --blue-bg: #eaf2fb;
+    --sidebar-w: 220px;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    height: 100vh;
+  }
+
+  .logo {
+    padding: 24px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .nav { padding: 12px 10px; flex: 1; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text2);
+    font-size: 13.5px;
+    font-weight: 400;
+    transition: all 0.15s;
+    margin-bottom: 2px;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: var(--bg); color: var(--text); }
+  .nav-item.active { background: var(--accent-bg); color: var(--accent); font-weight: 500; }
+  .nav-item svg { opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active svg { opacity: 1; }
+
+  .nav-section { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px 4px; margin-top: 8px; }
+
+  .sidebar-bottom {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .streak-box {
+    background: var(--accent-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    text-align: center;
+  }
+  .streak-num { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--accent); }
+  .streak-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-date { font-size: 12px; color: var(--text3); }
+
+  .btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn-accent {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .btn-accent:hover { background: #b05232; }
+  .btn-sm { padding: 5px 11px; font-size: 12px; }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
+  }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .card-sub { font-size: 12px; color: var(--text3); margin-bottom: 16px; }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); background: white; }
+  .field textarea { resize: vertical; min-height: 64px; }
+
+  .pill-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill {
+    padding: 5px 13px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12.5px;
+    cursor: pointer;
+    background: var(--surface2);
+    color: var(--text2);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .pill:hover { border-color: var(--border2); color: var(--text); }
+  .pill.on { background: var(--accent-bg); border-color: var(--accent2); color: var(--accent); font-weight: 500; }
+  .pill.multi.on { background: var(--red-bg); border-color: #e8a0a0; color: var(--red); }
+
+  /* STOOL TYPE GRID */
+  .stool-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stool-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--surface2);
+    transition: all 0.15s;
+  }
+  .stool-card:hover { border-color: var(--border2); }
+  .stool-card.on { border-color: var(--accent2); background: var(--accent-bg); }
+  .stool-card .stype { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 2px; }
+  .stool-card .sdesc { font-size: 11px; color: var(--text3); }
+  .stool-card.on .stype { color: var(--accent); }
+
+  /* METRICS GRID */
+  .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .metric-val { font-family: 'DM Serif Display', serif; font-size: 30px; color: var(--text); line-height: 1; }
+  .metric-label { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .metric-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* TAGS */
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    margin: 2px;
+  }
+  .tag-red { background: var(--red-bg); color: var(--red); }
+  .tag-green { background: var(--green-bg); color: var(--green); }
+  .tag-amber { background: var(--amber-bg); color: var(--amber); }
+  .tag-blue { background: var(--blue-bg); color: var(--blue); }
+  .tag-neutral { background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
+
+  /* HISTORY LIST */
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: border-color 0.15s;
+  }
+  .entry-card:hover { border-color: var(--border2); }
+  .entry-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .entry-body { flex: 1; min-width: 0; }
+  .entry-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; }
+  .entry-title { font-weight: 500; font-size: 14px; }
+  .entry-time { font-size: 11px; color: var(--text3); }
+  .entry-foods { font-size: 13px; color: var(--text2); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .entry-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .entry-del { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 16px; padding: 2px 4px; border-radius: 4px; }
+  .entry-del:hover { color: var(--red); background: var(--red-bg); }
+
+  /* INSIGHTS */
+  .insight {
+    border-left: 3px solid var(--accent);
+    padding: 12px 16px;
+    background: var(--accent-bg);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .insight.good { border-left-color: var(--green); background: var(--green-bg); color: #2a5e44; }
+  .insight.warn { border-left-color: var(--amber); background: var(--amber-bg); color: #7a4d06; }
+  .insight.info { border-left-color: var(--blue); background: var(--blue-bg); color: #1a4d78; }
+  .insight-icon { font-size: 14px; margin-right: 6px; }
+
+  /* CHARTS */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* TRIGGER TABLE */
+  .trigger-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .trigger-row:last-child { border-bottom: none; }
+  .trigger-bar-wrap { flex: 1; margin: 0 14px; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .trigger-bar { height: 100%; background: var(--accent2); border-radius: 3px; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.4; }
+  .empty p { font-size: 14px; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* SECTION HEADER */
+  .section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .section-hdr h2 { font-family: 'DM Serif Display', serif; font-size: 18px; }
+
+  /* BRISTOL LEGEND */
+  .bristol-legend { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .bl-item { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+  .bl-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* NOTIFICATION */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--text);
+    color: white;
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 900px) {
+    .metrics-grid { grid-template-columns: 1fr 1fr; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-name">GutLog</div>
+    <div class="logo-sub">Digestive Health Tracker</div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Track</div>
+    <button class="nav-item active" onclick="nav('log')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Log a Meal
+    </button>
+    <button class="nav-item" onclick="nav('history')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      History
+    </button>
+    <div class="nav-section">Understand</div>
+    <button class="nav-item" onclick="nav('analysis')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analysis
+    </button>
+    <button class="nav-item" onclick="nav('triggers')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Trigger Foods
+    </button>
+    <button class="nav-item" onclick="nav('bristol')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Bristol Guide
+    </button>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="streak-box">
+      <div class="streak-num" id="streakNum">0</div>
+      <div class="streak-label">day streak 🔥</div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">Log a Meal</div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="todayDate"></span>
+      <button class="btn btn-sm" onclick="exportData()">Export CSV</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- LOG PAGE -->
+    <div id="page-log" class="page active">
+      <div class="form-grid">
+        <div>
+          <div class="card">
+            <div class="card-title">Meal details</div>
+            <div class="card-sub">What did you eat and when?</div>
+
+            <div class="form-grid">
+              <div class="field">
+                <label>Date & time</label>
+                <input type="datetime-local" id="mealTime">
+              </div>
+              <div class="field">
+                <label>Meal type</label>
+                <select id="mealType">
+                  <option>🌅 Breakfast</option>
+                  <option>☀️ Lunch</option>
+                  <option>🌙 Dinner</option>
+                  <option>🍎 Snack</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Foods eaten <span style="font-weight:300;text-transform:none;color:var(--text3)">(comma separated)</span></label>
+              <textarea id="foodsEaten" placeholder="e.g. rice, dal, chicken curry, curd, roti..."></textarea>
+            </div>
+
+            <div class="field">
+              <label>Eating pace</label>
+              <div class="pill-group" id="pace">
+                <span class="pill" onclick="pick('pace',this)">Very fast</span>
+                <span class="pill" onclick="pick('pace',this)">Fast</span>
+                <span class="pill on" onclick="pick('pace',this)">Normal</span>
+                <span class="pill" onclick="pick('pace',this)">Slow</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Portion size</label>
+              <div class="pill-group" id="portion">
+                <span class="pill" onclick="pick('portion',this)">Small</span>
+                <span class="pill on" onclick="pick('portion',this)">Medium</span>
+                <span class="pill" onclick="pick('portion',this)">Large</span>
+                <span class="pill" onclick="pick('portion',this)">Very large</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Stress level</label>
+              <div class="pill-group" id="stress">
+                <span class="pill on" onclick="pick('stress',this)">😌 Relaxed</span>
+                <span class="pill" onclick="pick('stress',this)">😐 Mild</span>
+                <span class="pill" onclick="pick('stress',this)">😟 Moderate</span>
+                <span class="pill" onclick="pick('stress',this)">😰 High</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Symptoms noticed</label>
+              <div class="pill-group" id="symptoms">
+                <span class="pill multi" onclick="mpick(this)">Bloating</span>
+                <span class="pill multi" onclick="mpick(this)">Gas</span>
+                <span class="pill multi" onclick="mpick(this)">Cramps</span>
+                <span class="pill multi" onclick="mpick(this)">Nausea</span>
+                <span class="pill multi" onclick="mpick(this)">Heartburn</span>
+                <span class="pill multi" onclick="mpick(this)">Indigestion</span>
+                <span class="pill multi" onclick="mpick(this)">None</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card">
+            <div class="card-title">After meal</div>
+            <div class="card-sub">What happened post-meal?</div>
+
+            <div class="field">
+              <label>Activity after eating</label>
+              <div class="pill-group" id="activity">
+                <span class="pill" onclick="pick('activity',this)">😴 Lay down</span>
+                <span class="pill" onclick="pick('activity',this)">🪑 Sat for long</span>
+                <span class="pill on" onclick="pick('activity',this)">🚶 Short walk</span>
+                <span class="pill" onclick="pick('activity',this)">🏃 Active walk</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Walk duration</label>
+              <div class="pill-group" id="walkDuration">
+                <span class="pill" onclick="pick('walkDuration',this)">None</span>
+                <span class="pill" onclick="pick('walkDuration',this)">5 min</span>
+                <span class="pill on" onclick="pick('walkDuration',this)">10–15 min</span>
+                <span class="pill" onclick="pick('walkDuration',this)">20+ min</span>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="field">
+              <label>Toilet visit after meal?</label>
+              <div class="pill-group" id="toiletVisit">
+                <span class="pill on" onclick="pick('toiletVisit',this,'toggleStool')">No</span>
+                <span class="pill" onclick="pick('toiletVisit',this,'toggleStool')">Yes</span>
+              </div>
+            </div>
+
+            <div id="stoolSection" style="display:none;">
+              <div class="field">
+                <label>Stool type (Bristol scale)</label>
+                <div class="stool-grid" id="stoolGrid">
+                  <div class="stool-card" onclick="pickStool(this,1)"><div class="stype">Type 1</div><div class="sdesc">Hard lumps</div></div>
+                  <div class="stool-card" onclick="pickStool(this,2)"><div class="stype">Type 2</div><div class="sdesc">Lumpy sausage</div></div>
+                  <div class="stool-card" onclick="pickStool(this,3)"><div class="stype">Type 3</div><div class="sdesc">Cracked surface</div></div>
+                  <div class="stool-card" onclick="pickStool(this,4)"><div class="stype">Type 4</div><div class="sdesc">✓ Normal</div></div>
+                  <div class="stool-card" onclick="pickStool(this,5)"><div class="stype">Type 5</div><div class="sdesc">Soft blobs</div></div>
+                  <div class="stool-card" onclick="pickStool(this,6)"><div class="stype">Type 6</div><div class="sdesc">Fluffy/mushy</div></div>
+                  <div class="stool-card" onclick="pickStool(this,7)"><div class="stype">Type 7</div><div class="sdesc">Watery</div></div>
+                  <div class="stool-card" onclick="pickStool(this,0)"><div class="stype">—</div><div class="sdesc">Not sure</div></div>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="field">
+                  <label>Urgency</label>
+                  <div class="pill-group" id="urgency">
+                    <span class="pill" onclick="pick('urgency',this)">Mild</span>
+                    <span class="pill on" onclick="pick('urgency',this)">Urgent</span>
+                    <span class="pill" onclick="pick('urgency',this)">Very urgent</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Time to toilet (mins)</label>
+                  <input type="number" id="timeToToilet" placeholder="e.g. 10" min="0" max="120">
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Notes</label>
+              <textarea id="notes" placeholder="Anything else to note about this meal..."></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn" onclick="clearForm()">Clear</button>
+            <button class="btn btn-accent" onclick="saveEntry()">Save entry →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div id="page-history" class="page">
+      <div class="section-hdr">
+        <h2>Meal history</h2>
+        <div style="display:flex;gap:8px;">
+          <select id="filterType" onchange="renderHistory()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;background:var(--surface);color:var(--text);">
+            <option value="">All meals</option>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch">Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Snack">Snack</option>
+          </select>
+          <select id="filterToilet" onchange="renderHistory()" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:12px;background:var(--surface);color:var(--text);">
+            <option value="">All visits</option>
+            <option value="Yes">With toilet visit</option>
+            <option value="No">No toilet visit</option>
+          </select>
+        </div>
+      </div>
+      <div id="historyList"></div>
+    </div>
+
+    <!-- ANALYSIS PAGE -->
+    <div id="page-analysis" class="page">
+      <div id="analysisContent"></div>
+    </div>
+
+    <!-- TRIGGERS PAGE -->
+    <div id="page-triggers" class="page">
+      <div id="triggersContent"></div>
+    </div>
+
+    <!-- BRISTOL GUIDE PAGE -->
+    <div id="page-bristol" class="page">
+      <div class="card">
+        <div class="card-title">Bristol Stool Scale — Reference Guide</div>
+        <div class="card-sub">Understanding your stool type helps identify digestive patterns</div>
+        <div style="display:grid;gap:12px;margin-top:4px;">
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--amber-bg);border-radius:var(--radius-sm);">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:0.5px;">Type 1</div><div style="font-size:22px;margin:4px 0;">⬛</div><div style="font-size:11px;color:var(--amber);">Separate lumps</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--amber);margin-bottom:4px;">Hard lumps — Severely constipated</div><div style="font-size:12.5px;color:#7a5c10;line-height:1.6;">Hard, separate lumps like nuts. Difficult to pass. Suggests very slow gut transit, dehydration, or very low fiber intake. Increase water intake and dietary fiber.</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--amber-bg);border-radius:var(--radius-sm);">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:0.5px;">Type 2</div><div style="font-size:22px;margin:4px 0;">🌭</div><div style="font-size:11px;color:var(--amber);">Lumpy sausage</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--amber);margin-bottom:4px;">Sausage-shaped, lumpy — Constipated</div><div style="font-size:12.5px;color:#7a5c10;line-height:1.6;">Sausage-shaped but with lumps. Still on the constipated side. May indicate insufficient hydration or fiber. Slow transit time.</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--green-bg);border-radius:var(--radius-sm);">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;">Type 3</div><div style="font-size:22px;margin:4px 0;">🥖</div><div style="font-size:11px;color:var(--green);">Cracked surface</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--green);margin-bottom:4px;">Sausage with cracked surface — Normal</div><div style="font-size:12.5px;color:#2a5e44;line-height:1.6;">Like a sausage but with cracks on surface. Considered normal. This is a healthy stool for most people.</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--green-bg);border-radius:var(--radius-sm);border:1.5px solid #7dc4a0;">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;">Type 4 ✓</div><div style="font-size:22px;margin:4px 0;">🍌</div><div style="font-size:11px;color:var(--green);">Smooth sausage</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--green);margin-bottom:4px;">Smooth, soft sausage — Ideal</div><div style="font-size:12.5px;color:#2a5e44;line-height:1.6;">Like a sausage or snake, smooth and soft. This is the gold standard. Indicates healthy gut transit time and good hydration.</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--red-bg);border-radius:var(--radius-sm);">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;">Type 5</div><div style="font-size:22px;margin:4px 0;">🫧</div><div style="font-size:11px;color:var(--red);">Soft blobs</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--red);margin-bottom:4px;">Soft blobs with clear edges — Borderline loose</div><div style="font-size:12.5px;color:#8c2a2a;line-height:1.6;">Soft blobs passed easily. Borderline loose. May indicate a slightly overactive gut. Worth tracking which foods trigger this.</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--red-bg);border-radius:var(--radius-sm);">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;">Type 6</div><div style="font-size:22px;margin:4px 0;">☁️</div><div style="font-size:11px;color:var(--red);">Fluffy/mushy</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--red);margin-bottom:4px;">Fluffy pieces, mushy — Mild diarrhea</div><div style="font-size:12.5px;color:#8c2a2a;line-height:1.6;">Fluffy, mushy, with ragged edges. Mild diarrhea. Often related to stress, diet triggers, or IBS flare-up. Common with the gastrocolic reflex overreaction.</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:80px 1fr;gap:16px;align-items:start;padding:12px;background:var(--red-bg);border-radius:var(--radius-sm);">
+            <div style="text-align:center;"><div style="font-size:11px;font-weight:600;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;">Type 7</div><div style="font-size:22px;margin:4px 0;">💧</div><div style="font-size:11px;color:var(--red);">Watery</div></div>
+            <div><div style="font-weight:500;font-size:13px;color:var(--red);margin-bottom:4px;">Entirely liquid — Diarrhea</div><div style="font-size:12.5px;color:#8c2a2a;line-height:1.6;">No solid pieces at all. Diarrhea. May indicate infection, food intolerance, or severe IBS episode. If persistent, consult a doctor.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let entries = JSON.parse(localStorage.getItem('gutlog_entries') || '[]');
+let selectedStool = null;
+
+// Init datetime
+const now = new Date();
+now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+document.getElementById('mealTime').value = now.toISOString().slice(0,16);
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+updateStreak();
+
+const pageTitles = { log:'Log a Meal', history:'History', analysis:'Analysis', triggers:'Trigger Foods', bristol:'Bristol Stool Guide' };
+
+function nav(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const navIdx = ['log','history','analysis','triggers','bristol'].indexOf(id);
+  document.querySelectorAll('.nav-item')[navIdx].classList.add('active');
+  document.getElementById('page-'+id).classList.add('active');
+  document.getElementById('pageTitle').textContent = pageTitles[id];
+  if (id === 'history') renderHistory();
+  if (id === 'analysis') renderAnalysis();
+  if (id === 'triggers') renderTriggers();
+}
+
+function pick(group, el, cb) {
+  document.querySelectorAll(`#${group} .pill`).forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  if (cb === 'toggleStool') toggleStool(el.textContent.trim());
+}
+
+function mpick(el) { el.classList.toggle('on'); }
+
+function toggleStool(val) {
+  document.getElementById('stoolSection').style.display = val === 'Yes' ? 'block' : 'none';
+}
+
+function pickStool(el, t) {
+  document.querySelectorAll('.stool-card').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  selectedStool = t;
+}
+
+function getVal(group) {
+  const el = document.querySelector(`#${group} .pill.on`);
+  return el ? el.textContent.trim() : '';
+}
+
+function getMulti(group) {
+  return [...document.querySelectorAll(`#${group} .pill.on`)].map(p => p.textContent.trim());
+}
+
+function saveEntry() {
+  const foods = document.getElementById('foodsEaten').value.trim();
+  if (!foods) { showToast('Please enter what you ate.'); return; }
+  const entry = {
+    id: Date.now(),
+    mealTime: document.getElementById('mealTime').value,
+    mealType: document.getElementById('mealType').value,
+    foods,
+    pace: getVal('pace'),
+    portion: getVal('portion'),
+    stress: getVal('stress'),
+    activity: getVal('activity'),
+    walkDuration: getVal('walkDuration'),
+    toiletVisit: getVal('toiletVisit'),
+    stoolType: selectedStool,
+    urgency: getVal('urgency'),
+    timeToToilet: document.getElementById('timeToToilet').value,
+    symptoms: getMulti('symptoms'),
+    notes: document.getElementById('notes').value.trim()
+  };
+  entries.push(entry);
+  localStorage.setItem('gutlog_entries', JSON.stringify(entries));
+  selectedStool = null;
+  clearForm();
+  updateStreak();
+  showToast('Entry saved successfully!');
+  setTimeout(() => nav('history'), 600);
+}
+
+function clearForm() {
+  document.getElementById('foodsEaten').value = '';
+  document.getElementById('notes').value = '';
+  document.getElementById('timeToToilet').value = '';
+  document.getElementById('stoolSection').style.display = 'none';
+  selectedStool = null;
+  document.querySelectorAll('.stool-card').forEach(c => c.classList.remove('on'));
+  ['pace','portion','stress','activity','walkDuration','toiletVisit','urgency'].forEach(g => {
+    document.querySelectorAll(`#${g} .pill`).forEach(p => p.classList.remove('on'));
+  });
+  document.querySelectorAll('#symptoms .pill').forEach(p => p.classList.remove('on'));
+  const defaults = {pace:'Normal',portion:'Medium',stress:'😌 Relaxed',activity:'🚶 Short walk',walkDuration:'10–15 min',toiletVisit:'No',urgency:'Urgent'};
+  Object.entries(defaults).forEach(([g,v]) => {
+    const btn = [...document.querySelectorAll(`#${g} .pill`)].find(b => b.textContent.trim() === v);
+    if (btn) btn.classList.add('on');
+  });
+}
+
+function stoolLabel(t) {
+  if (t === null || t === undefined) return null;
+  const l = {0:'Unsure',1:'Type 1 – Hard',2:'Type 2 – Lumpy',3:'Type 3 – Cracked',4:'Type 4 – Normal',5:'Type 5 – Soft',6:'Type 6 – Mushy',7:'Type 7 – Watery'};
+  return l[t];
+}
+
+function stoolTagClass(t) {
+  if (!t) return 'tag-neutral';
+  if (t <= 2) return 'tag-amber';
+  if (t <= 4) return 'tag-green';
+  return 'tag-red';
+}
+
+function mealEmoji(type) {
+  if (type.includes('Breakfast')) return '🌅';
+  if (type.includes('Lunch')) return '☀️';
+  if (type.includes('Dinner')) return '🌙';
+  return '🍎';
+}
+
+function mealBg(type) {
+  if (type.includes('Breakfast')) return { bg:'#fdf3e3', c:'#b8760a' };
+  if (type.includes('Lunch')) return { bg:'#edf6f1', c:'#3a7d5c' };
+  if (type.includes('Dinner')) return { bg:'#eaf2fb', c:'#2d6fa3' };
+  return { bg:'#fdf0ec', c:'#c25c3a' };
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  const filterType = document.getElementById('filterType').value;
+  const filterToilet = document.getElementById('filterToilet').value;
+
+  let filtered = [...entries].sort((a,b) => b.id - a.id);
+  if (filterType) filtered = filtered.filter(e => e.mealType.includes(filterType));
+  if (filterToilet) filtered = filtered.filter(e => e.toiletVisit === filterToilet);
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><p>No entries yet. Start by logging a meal.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = filtered.map(e => {
+    const col = mealBg(e.mealType);
+    const stoolL = e.toiletVisit === 'Yes' ? stoolLabel(e.stoolType) : null;
+    const syms = (e.symptoms||[]).filter(s => s !== 'None');
+    return `<div class="entry-card">
+      <div class="entry-dot" style="background:${col.bg};color:${col.c}">${mealEmoji(e.mealType)}</div>
+      <div class="entry-body">
+        <div class="entry-head">
+          <div>
+            <span class="entry-title">${e.mealType.replace(/^[^\s]+ /,'')}</span>
+            <span class="entry-time"> · ${new Date(e.mealTime).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+          </div>
+          <button class="entry-del" onclick="deleteEntry(${e.id})">✕</button>
+        </div>
+        <div class="entry-foods">${e.foods}</div>
+        <div class="entry-tags">
+          <span class="tag tag-neutral">Pace: ${e.pace}</span>
+          <span class="tag tag-neutral">${e.portion}</span>
+          ${e.stress.includes('High') ? '<span class="tag tag-red">High stress</span>' : e.stress.includes('Moderate') ? '<span class="tag tag-amber">Mod stress</span>' : ''}
+          ${e.activity.includes('walk') || e.activity.includes('Walk') ? '<span class="tag tag-green">Walked after</span>' : '<span class="tag tag-amber">No walk</span>'}
+          ${e.toiletVisit === 'Yes' ? `<span class="tag ${stoolTagClass(e.stoolType)}">${stoolL || 'Toilet visit'}</span>` : ''}
+          ${syms.map(s => `<span class="tag tag-red">${s}</span>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  localStorage.setItem('gutlog_entries', JSON.stringify(entries));
+  renderHistory();
+  updateStreak();
+  showToast('Entry deleted.');
+}
+
+function renderAnalysis() {
+  const el = document.getElementById('analysisContent');
+  if (entries.length < 3) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><p>Log at least 3 meals to see analysis and insights.</p></div>`;
+    return;
+  }
+
+  const total = entries.length;
+  const withToilet = entries.filter(e => e.toiletVisit === 'Yes').length;
+  const loose = entries.filter(e => e.stoolType >= 5).length;
+  const fastEat = entries.filter(e => e.pace === 'Very fast' || e.pace === 'Fast').length;
+  const walked = entries.filter(e => e.activity.includes('walk')).length;
+  const toiletRate = Math.round(withToilet/total*100);
+  const walkRate = Math.round(walked/total*100);
+  const looseRate = withToilet > 0 ? Math.round(loose/withToilet*100) : 0;
+
+  // Insights
+  let insights = [];
+  if (fastEat > total*0.5) insights.push({type:'warn', text:`You eat fast in ${Math.round(fastEat/total*100)}% of meals. Fast eating triggers the gastrocolic reflex more aggressively — try extending each meal to 20+ minutes.`});
+  if (toiletRate > 50) insights.push({type:'warn', text:`You have a post-meal toilet visit in ${toiletRate}% of meals. This suggests an overactive gastrocolic reflex — common in IBS-D. Smaller, slower meals can help.`});
+  if (walkRate > 60) insights.push({type:'good', text:`Great habit! You walk after ${walkRate}% of meals. Regular post-meal walks regulate gut motility and reduce urgency.`});
+  else if (walkRate < 30) insights.push({type:'warn', text:`You only walk after ${walkRate}% of meals. A 10–15 minute walk after eating is one of the most effective ways to reduce post-meal urgency.`});
+  if (looseRate > 50) insights.push({type:'warn', text:`${looseRate}% of your toilet visits involve loose stools (Type 5–7). Try reducing fatty, spicy, and high-FODMAP foods and check your trigger foods section.`});
+  if (entries.filter(e=>(e.symptoms||[]).includes('Bloating')).length > total*0.4) insights.push({type:'info', text:`Bloating appears frequently. Eating too fast (air swallowing), carbonated drinks, and certain vegetables like onion and garlic are common causes.`});
+  if (!insights.length) insights.push({type:'good', text:'Your patterns look stable. Keep logging for more personalized insights.'});
+
+  // Stool distribution for chart
+  const stoolCounts = [0,0,0,0,0,0,0];
+  entries.forEach(e => { if (e.stoolType >= 1 && e.stoolType <= 7) stoolCounts[e.stoolType-1]++; });
+
+  // Pace distribution
+  const paceMap = {};
+  entries.forEach(e => { paceMap[e.pace] = (paceMap[e.pace]||0)+1; });
+
+  // Walk trend (last 14 entries)
+  const recent = [...entries].sort((a,b)=>a.id-b.id).slice(-14);
+
+  el.innerHTML = `
+    <div class="metrics-grid">
+      <div class="metric"><div class="metric-val">${total}</div><div class="metric-label">Meals logged</div></div>
+      <div class="metric"><div class="metric-val" style="color:${toiletRate>50?'var(--red)':'var(--text)'}">${toiletRate}%</div><div class="metric-label">Post-meal toilet rate</div></div>
+      <div class="metric"><div class="metric-val" style="color:var(--green)">${walkRate}%</div><div class="metric-label">Walk adherence</div></div>
+      <div class="metric"><div class="metric-val" style="color:${looseRate>40?'var(--red)':'var(--text)'}">${looseRate}%</div><div class="metric-label">Loose stool rate</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">Insights for you</div>
+      <div class="card-sub">Based on your logged patterns</div>
+      ${insights.map(i=>`<div class="insight ${i.type}">${i.text}</div>`).join('')}
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Stool type distribution</div>
+        <div class="card-sub">Bristol scale breakdown</div>
+        <div class="chart-wrap"><canvas id="stoolChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Eating pace breakdown</div>
+        <div class="card-sub">How fast you eat across meals</div>
+        <div class="chart-wrap"><canvas id="paceChart"></canvas></div>
+      </div>
+    </div>
+  `;
+
+  // Stool Chart
+  new Chart(document.getElementById('stoolChart'), {
+    type: 'bar',
+    data: {
+      labels: ['T1','T2','T3','T4','T5','T6','T7'],
+      datasets: [{
+        data: stoolCounts,
+        backgroundColor: ['#fac775','#fac775','#97c459','#97c459','#f09595','#e24b4a','#c23a3a'],
+        borderRadius: 6, borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.y} times` } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#9c9490' } },
+        y: { grid: { color: '#f0ece6' }, ticks: { color: '#9c9490', stepSize: 1 } }
+      }
+    }
+  });
+
+  // Pace Chart
+  const paceLabels = Object.keys(paceMap);
+  const paceColors = { 'Very fast':'#e24b4a', 'Fast':'#f09595', 'Normal':'#97c459', 'Slow':'#5dcaa5' };
+  new Chart(document.getElementById('paceChart'), {
+    type: 'doughnut',
+    data: {
+      labels: paceLabels,
+      datasets: [{ data: paceLabels.map(l=>paceMap[l]), backgroundColor: paceLabels.map(l=>paceColors[l]||'#d3d1c7'), borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, color: '#6b6460', font: { family: 'DM Sans', size: 11 } } } },
+      cutout: '65%'
+    }
+  });
+}
+
+function renderTriggers() {
+  const el = document.getElementById('triggersContent');
+  if (entries.length < 5) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🍽️</div><p>Log at least 5 meals to identify trigger foods.</p></div>`;
+    return;
+  }
+
+  const looseEntries = entries.filter(e => e.stoolType >= 5);
+  const allFoodMap = {};
+  const looseFoodMap = {};
+
+  entries.forEach(e => {
+    (e.foods||'').split(',').map(f=>f.trim().toLowerCase()).filter(Boolean).forEach(f => {
+      allFoodMap[f] = (allFoodMap[f]||0)+1;
+    });
+  });
+
+  looseEntries.forEach(e => {
+    (e.foods||'').split(',').map(f=>f.trim().toLowerCase()).filter(Boolean).forEach(f => {
+      looseFoodMap[f] = (looseFoodMap[f]||0)+1;
+    });
+  });
+
+  // Risk score = loose appearances / total appearances
+  const scored = Object.entries(looseFoodMap)
+    .filter(([f,c]) => allFoodMap[f] >= 2)
+    .map(([f,c]) => ({ food: f, loose: c, total: allFoodMap[f], risk: Math.round(c/allFoodMap[f]*100) }))
+    .sort((a,b) => b.risk - a.risk)
+    .slice(0, 12);
+
+  const safeEntries = entries.filter(e => e.stoolType === 4 || e.stoolType === 3);
+  const safeFoodMap = {};
+  safeEntries.forEach(e => {
+    (e.foods||'').split(',').map(f=>f.trim().toLowerCase()).filter(Boolean).forEach(f => {
+      safeFoodMap[f] = (safeFoodMap[f]||0)+1;
+    });
+  });
+  const safeScored = Object.entries(safeFoodMap)
+    .filter(([f,c]) => c >= 2 && !looseFoodMap[f])
+    .sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+  el.innerHTML = `
+    <div class="form-grid">
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">⚠ Possible trigger foods</div>
+        <div class="card-sub">Foods that appeared most often before loose stools</div>
+        ${scored.length ? scored.map(s => `
+          <div class="trigger-row">
+            <span style="min-width:100px;text-transform:capitalize;font-size:13px;">${s.food}</span>
+            <div class="trigger-bar-wrap"><div class="trigger-bar" style="width:${s.risk}%;background:${s.risk>70?'#e24b4a':s.risk>40?'#ef9f27':'#97c459'}"></div></div>
+            <span style="font-size:12px;color:var(--text2);min-width:40px;text-align:right;">${s.risk}%</span>
+          </div>
+        `).join('') : '<p style="font-size:13px;color:var(--text3);padding:8px 0;">Not enough loose stool data yet.</p>'}
+        <p style="font-size:11px;color:var(--text3);margin-top:10px;">% of times this food appeared before loose stools (Type 5–7)</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="color:var(--green)">✓ Safer foods</div>
+        <div class="card-sub">Foods associated with normal stools (Type 3–4)</div>
+        ${safeScored.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">${safeScored.map(([f,c])=>`<span class="tag tag-green" style="font-size:12px;padding:4px 10px;text-transform:capitalize;">${f} <span style="opacity:0.7">(${c}×)</span></span>`).join('')}</div>`
+        : '<p style="font-size:13px;color:var(--text3);padding:8px 0;">Keep logging to discover safe foods.</p>'}
+        <p style="font-size:11px;color:var(--text3);margin-top:10px;">These foods appeared multiple times alongside good stools</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Symptom frequency</div>
+      <div class="card-sub">Which symptoms appear most</div>
+      <div style="position:relative;height:180px;"><canvas id="symChart"></canvas></div>
+    </div>
+  `;
+
+  const symMap = {};
+  entries.forEach(e => (e.symptoms||[]).filter(s=>s!=='None').forEach(s=>{ symMap[s]=(symMap[s]||0)+1; }));
+  const symKeys = Object.keys(symMap);
+  if (symKeys.length) {
+    new Chart(document.getElementById('symChart'), {
+      type: 'bar',
+      data: {
+        labels: symKeys,
+        datasets: [{ data: symKeys.map(k=>symMap[k]), backgroundColor: '#f09595', borderRadius: 6, borderSkipped: false }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#9c9490' } },
+          y: { grid: { color: '#f0ece6' }, ticks: { color: '#9c9490', stepSize: 1 } }
+        }
+      }
+    });
+  }
+}
+
+function updateStreak() {
+  if (!entries.length) { document.getElementById('streakNum').textContent = '0'; return; }
+  const dates = [...new Set(entries.map(e => e.mealTime.slice(0,10)))].sort();
+  let streak = 1;
+  for (let i = dates.length-1; i > 0; i--) {
+    const d1 = new Date(dates[i]), d2 = new Date(dates[i-1]);
+    if ((d1-d2) === 86400000) streak++;
+    else break;
+  }
+  document.getElementById('streakNum').textContent = streak;
+}
+
+function exportData() {
+  if (!entries.length) { showToast('No entries to export.'); return; }
+  const headers = ['Date','MealType','Foods','Pace','Portion','Stress','Activity','WalkDuration','ToiletVisit','StoolType','Urgency','TimeToToilet','Symptoms','Notes'];
+  const rows = entries.map(e => [
+    e.mealTime, e.mealType, `"${e.foods}"`, e.pace, e.portion, e.stress, e.activity, e.walkDuration,
+    e.toiletVisit, stoolLabel(e.stoolType)||'', e.urgency, e.timeToToilet,
+    `"${(e.symptoms||[]).join(', ')}"`, `"${e.notes||''}"`
+  ]);
+  const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
+  a.download = `gutlog_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('CSV exported!');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
